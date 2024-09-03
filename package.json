@@ -4,5 +4,33 @@
     "@types/pako": "^2.0.3",
     "binaryio.js": "^1.0.2",
     "pako": "^2.1.0"
-  }
+  },
+  "name": "lib3dse",
+  "version": "1.0.0",
+  "description": "A TS library for Minecraft 3DS Edition files + more",
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DexrnZacAttack/lib3DSE.git"
+  },
+  "keywords": [
+    "minecraft",
+    "3ds",
+    "lce",
+    "bedrock",
+    "java",
+    "edition",
+    "cdb",
+    "vdb"
+  ],
+  "author": "Dexrn ZacAttack <dexrn@hotmail.com> (https://dexrnzacattack.github.io/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DexrnZacAttack/lib3DSE/issues"
+  },
+  "homepage": "https://github.com/DexrnZacAttack/lib3DSE#readme"
 }
