@@ -10,17 +10,17 @@
  * Licensed under the MIT License. See LICENSE file for details.
 */
 
-import { bReader } from "D:/Projects/Dev/Web/BinaryIO/src/index.js";
+import { bReader } from "binaryio.js";
 import { readFileSync, writeFileSync } from "fs";
 import { inflate } from "pako";
 
-interface ChunkSection {
+export interface ChunkSection {
     index: number,
     compressedSize: number,
     decompressedSize: number
 }
 
-interface Chunk {
+export interface Chunk {
     index: number,
     size: number,
     data: Uint8Array
@@ -30,10 +30,10 @@ interface Chunk {
 
 // welcome to pain
 
-function readCDB(cdb: Uint8Array) {
+export async function readCDB(cdb: Uint8Array) {
     let loopCount = 0;
 
-    const reader: bReader = new bReader(cdb, true);
+    const reader: bReader = new bReader(new DataView(cdb.buffer, cdb.byteOffset, cdb.byteLength), true);
     
     const chunks: Chunk[] = [];
 
@@ -56,9 +56,9 @@ function readCDB(cdb: Uint8Array) {
     }
     
 
-    files.forEach(file => {
+    await Promise.all(files.map(async file => {
     loopCount++;
-    const fReader = new bReader(file, true);
+    const fReader = new bReader(new DataView(file.buffer, file.byteOffset, file.byteLength), true);
     console.log(fReader);
     fReader.readShort();
     fReader.readShort();
@@ -69,7 +69,7 @@ function readCDB(cdb: Uint8Array) {
 
     const magic = (fReader.readUInt()).toString(16);
     if (magic != "abcdef98")
-        throw new TypeError(`Magic "${magic}" does not match expected magic "abcdef98"`);
+        return new TypeError(`Magic "${magic}" does not match expected magic "abcdef98"`);
 
 
     fReader.readUInt();
@@ -98,12 +98,16 @@ function readCDB(cdb: Uint8Array) {
 
         const fullChunk = fReader.slice(fReader.pos, fReader.pos + initFileSize);
         const chunk = fullChunk.slice(0, chunkSection.compressedSize);
-        const dcChunk = inflate(chunk);
+        try {
+        const dcChunk: Uint8Array | undefined = await new Promise(resolve => resolve(inflate(chunk)));
         console.log(fReader.pos);
-        chunks.push({ index: chunkSection.index, size: dcChunk.length, data: dcChunk })
+        chunks.push({ index: chunkSection.index, size: dcChunk?.length ?? 0, data: dcChunk })
+        } catch {}
     };
-});
+}));
+
+    return chunks;
 }
 
 // this is just for testing
-readCDB(readFileSync("../../testing/slt0.cdb"));
+// readCDB(readFileSync("../../testing/slt0.cdb"));
