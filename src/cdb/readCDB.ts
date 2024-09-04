@@ -67,11 +67,12 @@ export async function readCDB(cdb: Uint8Array): Promise<Chunk[]> {
     loopCount++;
     const fReader = bReaderFromBuf(file, true);
     console.log(fReader);
+    // smh I really need to finish my binary tools
     fReader.readShort();
     fReader.readShort();
-    const fileCount = fReader.readUInt();
     fReader.readUInt();
-    const fileSize = fReader.readUInt();
+    fReader.readUInt();
+    fReader.readUInt();
     fReader.readUInt();
 
     const magic = (fReader.readUInt()).toString(16);
@@ -79,7 +80,6 @@ export async function readCDB(cdb: Uint8Array): Promise<Chunk[]> {
         throw new TypeError(`Magic "${magic}" does not match expected magic "abcdef98"`);
 
 
-    fReader.readUInt();
     fReader.readUInt();
     fReader.readUInt();
     fReader.readUInt();
@@ -99,7 +99,7 @@ export async function readCDB(cdb: Uint8Array): Promise<Chunk[]> {
         }
 
         console.log(chunkSection.index)
-        fReader.setPos(chunkSection.index += 20)
+        fReader.setPos(chunkSection.index)
 
         console.log(fReader.pos);
 
