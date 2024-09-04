@@ -37,7 +37,7 @@ function bReaderFromBuf(data: ArrayBufferView, ...args: bReaderOptions): bReader
 
 // welcome to pain
 
-function readCDB(cdb: Uint8Array) {
+async function readCDB(cdb: Uint8Array) {
     let loopCount = 0;
 
     const reader: bReader = bReaderFromBuf(cdb, true);
@@ -63,7 +63,7 @@ function readCDB(cdb: Uint8Array) {
     }
     
 
-    files.forEach(async file => {
+    await Promise.all(files.map(async file => {
     loopCount++;
     const fReader = bReaderFromBuf(file, true);
     console.log(fReader);
@@ -109,7 +109,7 @@ function readCDB(cdb: Uint8Array) {
         console.log(fReader.pos);
         chunks.push({ index: chunkSection.index, size: dcChunk.length, data: dcChunk })
     };
-});
+}));
 }
 
 // this is just for testing
