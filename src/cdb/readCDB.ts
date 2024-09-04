@@ -12,7 +12,7 @@
 
 import { bReader } from "binaryio.js";
 import { readFileSync, writeFileSync } from "fs";
-import { inflate } from "pako";
+import { decompress } from "nbtify";
 
 interface ChunkSection {
     index: number,
@@ -63,7 +63,7 @@ function readCDB(cdb: Uint8Array) {
     }
     
 
-    files.forEach(file => {
+    files.forEach(async file => {
     loopCount++;
     const fReader = bReaderFromBuf(file, true);
     console.log(fReader);
@@ -105,7 +105,7 @@ function readCDB(cdb: Uint8Array) {
 
         const fullChunk = fReader.slice(fReader.pos, fReader.pos + initFileSize);
         const chunk = fullChunk.slice(0, chunkSection.compressedSize);
-        const dcChunk = inflate(chunk);
+        const dcChunk = await decompress(new Uint8Array(chunk), "deflate");
         console.log(fReader.pos);
         chunks.push({ index: chunkSection.index, size: dcChunk.length, data: dcChunk })
     };
