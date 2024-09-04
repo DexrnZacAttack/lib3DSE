@@ -10,7 +10,7 @@
  * Licensed under the MIT License. See LICENSE file for details.
 */
 
-import { bReader } from "D:/Projects/Dev/Web/BinaryIO/src/index.js";
+import { bReader } from "binaryio.js";
 import { readFileSync, writeFileSync } from "fs";
 import { inflate } from "pako";
 
@@ -26,6 +26,13 @@ interface Chunk {
     data: Uint8Array
 }
 
+type bReaderOptions = typeof bReader extends abstract new (dvRead: DataView, ...args: infer P) => bReader ? P : never;
+
+function bReaderFromBuf(data: ArrayBufferView, ...args: bReaderOptions): bReader {
+    const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+    return new bReader(view, ...args);
+}
+
 // Massive thanks to Anonymous941 for helping out so much with all this!
 
 // welcome to pain
@@ -33,7 +40,7 @@ interface Chunk {
 function readCDB(cdb: Uint8Array) {
     let loopCount = 0;
 
-    const reader: bReader = new bReader(cdb, true);
+    const reader: bReader = bReaderFromBuf(cdb, true);
     
     const chunks: Chunk[] = [];
 
@@ -58,7 +65,7 @@ function readCDB(cdb: Uint8Array) {
 
     files.forEach(file => {
     loopCount++;
-    const fReader = new bReader(file, true);
+    const fReader = bReaderFromBuf(file, true);
     console.log(fReader);
     fReader.readShort();
     fReader.readShort();
