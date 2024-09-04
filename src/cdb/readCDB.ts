@@ -14,13 +14,13 @@ import { bReader } from "binaryio.js";
 import { readFileSync, writeFileSync } from "fs";
 import { decompress } from "nbtify";
 
-interface ChunkSection {
+export interface ChunkSection {
     index: number,
     compressedSize: number,
     decompressedSize: number
 }
 
-interface Chunk {
+export interface Chunk {
     index: number,
     size: number,
     data: Uint8Array
@@ -37,7 +37,7 @@ function bReaderFromBuf(data: ArrayBufferView, ...args: bReaderOptions): bReader
 
 // welcome to pain
 
-async function readCDB(cdb: Uint8Array) {
+export async function readCDB(cdb: Uint8Array): Promise<Chunk[]> {
     let loopCount = 0;
 
     const reader: bReader = bReaderFromBuf(cdb, true);
@@ -110,7 +110,9 @@ async function readCDB(cdb: Uint8Array) {
         chunks.push({ index: chunkSection.index, size: dcChunk.length, data: dcChunk })
     };
 }));
+
+    return chunks;
 }
 
 // this is just for testing
-readCDB(readFileSync("../../testing/slt0.cdb"));
+// readCDB(readFileSync("../../testing/slt0.cdb"));
