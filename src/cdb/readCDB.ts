@@ -11,11 +11,12 @@
 */
 
 import { bReader } from "binaryio.js";
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, write, writeFileSync } from "fs";
 import { decompress } from "nbtify";
 
 export interface ChunkSection {
     index: number,
+    position: number,
     compressedSize: number,
     decompressedSize: number
 }
@@ -33,7 +34,7 @@ function bReaderFromBuf(data: ArrayBufferView, ...args: bReaderOptions): bReader
     return new bReader(view, ...args);
 }
 
-// Massive thanks to Anonymous941 for helping out so much with all this!
+// Massive thanks to Anonymous941 and Offroaders123 for helping out so much with all this!
 
 // welcome to pain
 
@@ -81,29 +82,33 @@ export async function readCDB(cdb: Uint8Array): Promise<Chunk[]> {
             fReader.readUInt();
             fReader.readUInt();
             fReader.readUInt();
+            console.log(fReader.pos);
 
             const chunkSections: ChunkSection[] = [];
 
             for (var j = 0; j < 6; j++) {
                 const index = fReader.readInt();
+                const pos = fReader.readInt();
                 const compressedSize = fReader.readInt();
                 const decompressedSize = fReader.readInt();
-                chunkSections.push({ index, compressedSize, decompressedSize });
+                chunkSections.push({ index: index, position: pos, compressedSize: compressedSize, decompressedSize: decompressedSize });
             }
 
             for (const chunkSection of chunkSections) {
-                if (chunkSection.index === -1) {
+                if (chunkSection.index === -1 || chunkSection.position === -1) {
                     return;
                 }
 
-                // This does something unwanted, was this debug code?
-                fReader.setPos(chunkSection.index);
+                fReader.setPos(chunkSection.position - 0xC);
 
                 const fullChunk = fReader.slice(fReader.pos, fReader.pos + initFileSize);
                 const chunk = fullChunk.slice(0, chunkSection.compressedSize);
                 const dcChunk = await decompress(new Uint8Array(chunk), "deflate");
-                console.log({ index: chunkSection.index, size: dcChunk.length, data: dcChunk });
-                chunks.push({ index: chunkSection.index, size: dcChunk.length, data: dcChunk })
+
+                // debug
+                writeFileSync(`../../testing/extract/chunk${loopCount}_.dat`, dcChunk)
+
+                chunks.push({ index: chunkSection.index, size: dcChunk.length, data: dcChunk });
             };
     }));
 
