@@ -14,24 +14,12 @@ import { bReader } from 'binaryio.js';
 import { decompress } from 'nbtify';
 import { Chunk, ChunkSection } from '../index.js';
 
-type bReaderOptions = typeof bReader extends abstract new (dvRead: DataView, ...args: infer P) => bReader ? P : never;
-
-// thx offroaders123!
-/** Creates a bReader from a buffer */
-function bReaderFromBuf(data: ArrayBufferView, ...args: bReaderOptions): bReader {
-    const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-    return new bReader(view, ...args);
-}
-
 // Massive thanks to Anonymous941 and Offroaders123 for helping out so much with all this!
 
 /** Reads a CDB file and returns all chunks inside, does not return the extra data at the end though (yet) */
 export async function readCDB(cdb: Uint8Array): Promise<Chunk[]> {
+    const reader: bReader = new bReader(new DataView(cdb.buffer), true);
 
-    /** Reader for the entire CDB file */
-    const reader = bReaderFromBuf(cdb, true);
-
-    const files: Uint8Array[] = [];
     const chunks: Chunk[] = [];
 
     // read initial stuff
@@ -47,55 +35,47 @@ export async function readCDB(cdb: Uint8Array): Promise<Chunk[]> {
         reader.readUInt();
     }
 
+    const files: Uint8Array[] = [];
+
     for (let i = 0; i < initFileCount; i++) {
         files.push(cdb.slice(i * initFileSize, i * initFileSize + initFileSize));
     }
 
     for (const file of files) {
-        /** Reader for only one file of the cdb */
-        const fReader = new bReader(new DataView(file.buffer), true);
+        const fReader = new bReader(file, true);
+            // smh I really need to finish my binary tools
+            fReader.readShort();
+            fReader.readShort();
+            fReader.readUInt();
+            fReader.readUInt();
+            fReader.readUInt();
+            fReader.readUInt();
 
-        // smh I really need to finish my binary tools
-        fReader.readShort();
-        fReader.readShort();
-        fReader.readUInt();
-        fReader.readUInt();
-        fReader.readUInt();
-        fReader.readUInt();
+            const magic = (fReader.readUInt()).toString(16);
+            if (magic != "abcdef98")
+                throw new TypeError(`Magic "${magic}" does not match expected magic "abcdef98"`);
 
-        const magic = (fReader.readUInt()).toString(16);
-        if (magic != "abcdef98")
-            throw new TypeError(`Magic "${magic}" does not match expected magic "abcdef98"`);
+            fReader.readUInt();
+            fReader.readUInt();
+            fReader.readUInt();
+            
+            const chunkSections: ChunkSection[] = [];
 
-        fReader.readUInt();
-        fReader.readUInt();
-        fReader.readUInt();
-
-        const chunkSections: ChunkSection[] = [];
-
-        for (var j = 0; j < 6; j++) {
-            const index = fReader.readInt();
-            const pos = fReader.readInt();
-            const compressedSize = fReader.readInt();
-            const decompressedSize = fReader.readInt();
-            chunkSections.push({ index: index, position: pos, compressedSize: compressedSize, decompressedSize: decompressedSize });
-        }
-
-        for (const chunkSection of chunkSections) {
-            // if any of these are -1 it means that they just don't exist lol
-            if (chunkSection.index === -1 || chunkSection.position === -1) {
-                continue;
+            for (var j = 0; j < 6; j++) {
+                const index = fReader.readInt();
+                const pos = fReader.readInt();
+                const compressedSize = fReader.readInt();
+                const decompressedSize = fReader.readInt();
+                chunkSections.push({ index: index, position: pos, compressedSize: compressedSize, decompressedSize: decompressedSize });
             }
 
-            // bad way of doing this lol
-            const chunk = file.slice(chunkSection.position + 20, chunkSection.position + chunkSection.compressedSize + 20);
+            for (const chunkSection of chunkSections) {
+                if (chunkSection.index === -1 || chunkSection.position === -1) continue;
 
-            // decompress
-            const dcChunk = await decompress(chunk, "deflate");
-
-            // push to the array
-            chunks.push({ section: chunkSection, data: dcChunk });
-        };
+                const chunk = file.slice(chunkSection.position + 20, chunkSection.position + chunkSection.compressedSize + 20);
+                const dcChunk = await decompress(chunk, "deflate");
+                chunks.push({ section: chunkSection, data: dcChunk });
+            };
     };
 
     return chunks;
