@@ -43,39 +43,39 @@ export async function readCDB(cdb: Uint8Array): Promise<Chunk[]> {
 
     for (const file of files) {
         const fReader = new bReader(file, true);
-            // smh I really need to finish my binary tools
-            fReader.readShort();
-            fReader.readShort();
-            fReader.readUInt();
-            fReader.readUInt();
-            fReader.readUInt();
-            fReader.readUInt();
+        // smh I really need to finish my binary tools
+        fReader.readShort();
+        fReader.readShort();
+        fReader.readUInt();
+        fReader.readUInt();
+        fReader.readUInt();
+        fReader.readUInt();
 
-            const magic = (fReader.readUInt()).toString(16);
-            if (magic != "abcdef98")
-                throw new TypeError(`Magic "${magic}" does not match expected magic "abcdef98"`);
+        const magic = (fReader.readUInt()).toString(16);
+        if (magic != "abcdef98")
+            throw new TypeError(`Magic "${magic}" does not match expected magic "abcdef98"`);
 
-            fReader.readUInt();
-            fReader.readUInt();
-            fReader.readUInt();
-            
-            const chunkSections: ChunkSection[] = [];
+        fReader.readUInt();
+        fReader.readUInt();
+        fReader.readUInt();
 
-            for (var j = 0; j < 6; j++) {
-                const index = fReader.readInt();
-                const pos = fReader.readInt();
-                const compressedSize = fReader.readInt();
-                const decompressedSize = fReader.readInt();
-                chunkSections.push({ index: index, position: pos, compressedSize: compressedSize, decompressedSize: decompressedSize });
-            }
+        const chunkSections: ChunkSection[] = [];
 
-            for (const chunkSection of chunkSections) {
-                if (chunkSection.index === -1 || chunkSection.position === -1) continue;
+        for (var j = 0; j < 6; j++) {
+            const index = fReader.readInt();
+            const pos = fReader.readInt();
+            const compressedSize = fReader.readInt();
+            const decompressedSize = fReader.readInt();
+            chunkSections.push({ index: index, position: pos, compressedSize: compressedSize, decompressedSize: decompressedSize });
+        }
 
-                const chunk = file.slice(chunkSection.position + 20, chunkSection.position + chunkSection.compressedSize + 20);
-                const dcChunk = await decompress(chunk, "deflate");
-                chunks.push({ section: chunkSection, data: dcChunk });
-            };
+        for (const chunkSection of chunkSections) {
+            if (chunkSection.index === -1 || chunkSection.position === -1) continue;
+
+            const chunk = file.slice(chunkSection.position + 20, chunkSection.position + chunkSection.compressedSize + 20);
+            const dcChunk = await decompress(chunk, "deflate");
+            chunks.push({ section: chunkSection, data: dcChunk });
+        };
     };
 
     return chunks;
