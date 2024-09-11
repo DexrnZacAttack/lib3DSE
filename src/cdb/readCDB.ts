@@ -11,7 +11,7 @@
 */
 
 import { bReader } from 'binaryio.js';
-import { decompress } from 'nbtify';
+import { decompress, read } from 'nbtify';
 import { Chunk, ChunkSection } from '../index.js';
 
 // Massive thanks to Anonymous941 and Offroaders123 for helping out so much with all this!
@@ -43,7 +43,6 @@ export async function readCDB(cdb: Uint8Array): Promise<Chunk[]> {
 
     for (const file of files) {
         const fReader = new bReader(file, true);
-        // smh I really need to finish my binary tools
         fReader.readShort();
         fReader.readShort();
         fReader.readUInt();
@@ -74,7 +73,12 @@ export async function readCDB(cdb: Uint8Array): Promise<Chunk[]> {
 
             const chunk = file.slice(chunkSection.position + 20, chunkSection.position + chunkSection.compressedSize + 20);
             const dcChunk = await decompress(chunk, "deflate");
-            chunks.push({ section: chunkSection, data: dcChunk });
+            if ((dcChunk[0]! | (dcChunk[1]! << 8) | (dcChunk[2]! << 16) | (dcChunk[3]! << 24) >>> 0).toString(16) === "800000a") {
+                chunks.push({ section: chunkSection, data: await read(dcChunk, { endian: 'little', strict: false }) });
+            } else {
+                chunks.push({ section: chunkSection, data: dcChunk });
+            }
+
         };
     };
 

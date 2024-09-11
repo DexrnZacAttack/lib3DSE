@@ -10,6 +10,8 @@
  * Licensed under the MIT License. See LICENSE file for details.
 */
 
+import { NBTData } from "nbtify";
+
 export * from "./cdb/readCDB.js";
 
 export interface ChunkSection {
@@ -21,5 +23,5 @@ export interface ChunkSection {
 
 export interface Chunk {
     section: ChunkSection,
-    data: Uint8Array
+    data: Uint8Array | NBTData
 }
